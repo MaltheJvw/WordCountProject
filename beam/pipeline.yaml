@@ -1,0 +1,50 @@
+# Apache Beam Pipeline Configuration for WordCount Project
+
+pipeline:
+  name: wordcount_pipeline
+  runner: DirectRunner               
+  project: wordcount-local
+  temp_location: /tmp/beam_temp      
+
+input:
+  type: text
+  source:
+    - path: hdfs://localhost:9000/input_dir/AChristmasCarol_CharlesDickens_English.txt
+      format: utf-8
+      streaming: false               
+
+output:
+  type: text
+  destination:
+    path: hdfs://localhost:9000/output_dir/wordcount_results.txt
+    format: utf-8
+    compression: none
+
+processing:
+  batch_size: 1000                   
+  window_size: 5                     
+  allowed_lateness: 1                
+  triggers:
+    type: default                   
+    frequency: 1                     
+  transformations:
+    - name: clean_and_tokenize
+      type: Map
+      description: >
+        Remove punctuation, lowercase all words, and split lines into individual tokens.
+    - name: count_words
+      type: CombinePerKey
+      description: >
+        Aggregate counts of each unique word in the input dataset.
+    - name: format_output
+      type: Map
+      description: >
+        Format each (word, count) pair as a string "word: count" for text output.
+
+monitoring:
+  logging_level: INFO
+  metrics_enabled: true
+  metrics:
+    - element_count
+    - processing_time
+    - window_latency
